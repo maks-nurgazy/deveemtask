@@ -31,6 +31,7 @@ function Select({ isMultiple }) {
     const [open, toggleOpen] = useToggleState(false);
     const [input, handleInput, clearInput] = useInputState("");
     const [chips, setChips] = useState({});
+    const [single, setSingle] = useState({ group: { content: "hello", key: "hello" } });  // { group : {key:"somekey",content:"somecontent"}}
     const [options, setOptions] = useState(defOptions);
 
     const ref = useRef(null);
@@ -111,8 +112,8 @@ function Select({ isMultiple }) {
         clearInput();
     }
 
-    const addInput = (key, option) => {
-
+    const addInput = (group, option) => {    // { group : {key:"somekey",content:"somecontent"}}
+        setSingle({ group: option });
     }
 
     const handleSubmit = (e) => {
@@ -138,7 +139,15 @@ function Select({ isMultiple }) {
         <div className="page-container" onClick={handleClickOutside}>
             <div className="dropdown-container">
                 <form className="search" ref={ref} onSubmit={handleSubmit} style={{}}>
-                    <Chip defOptions={chips} deleteChip={deleteChip} />
+                    {
+                        isMultiple
+                            ?
+                            <Chip defOptions={chips} deleteChip={deleteChip} />
+                            :
+                            <div>
+                                <p>{single[Object.keys(single)[0]].content}</p>
+                            </div>
+                    }
                     <input type="text" placeholder={"search"} value={input} onChange={handleInput} />
                     <div className="arrow"></div>
                     {open && <div className="dropdown">
