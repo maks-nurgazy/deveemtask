@@ -6,45 +6,39 @@ import useInputState from '../hooks/useInputState';
 import './Select.css';
 
 
-let defOptions = {
-    meeting: [
-        { content: "Hello", key: "hello" },
-        { content: "Welcome", key: "welcome" },
-        { content: "Hi", key: "hi" },
-    ],
-    parting: [
-        { content: "Good bye", key: "good-bye" },
-        { content: "See you later", key: "see-you-later" },
-    ],
-    mood: [
-        { content: "Don't worry", key: "don$t-worry" },
-        { content: "Be happy", key: "be-happy" }
-    ],
-};
-
+let defOptions;
 
 Select.defaultProps = {
     isMultiple: false,
 }
 
-function Select({ isMultiple }) {
+function Select({ isMultiple, selections, height }) {
     const [open, toggleOpen] = useToggleState(false);
+    const [toggleclass, setToggleclass] = useToggleState(false);
     const [input, handleInput, clearInput] = useInputState("");
     const [chips, setChips] = useState({});
-    const [single, setSingle] = useState({ group: { content: "hello", key: "hello" } });  // { group : {key:"somekey",content:"somecontent"}}
-    const [options, setOptions] = useState(defOptions);
+    const [single, setSingle] = useState({ group: { content: "", key: "" } });
+    const [options, setOptions] = useState(selections);
+    defOptions = selections;
 
     const ref = useRef(null);
 
     useEffect(() => {
+        document.body.addEventListener('click', handleClickOutside);
+        return () => {
+            document.body.removeEventListener('click', handleClickOutside);
+        }
+    }, []);
+
+    useEffect(() => {
 
         let typing = Object.entries(defOptions).map(([key, value]) => {
-            if (key.toLowerCase().includes(input)) {
+            if (key.toLowerCase().includes(input.toLowerCase())) {
                 return [key, value];
             }
             else {
                 const e = value.filter(element => {
-                    if (element.content.toLowerCase().includes(input)) {
+                    if (element.content.toLowerCase().includes(input.toLowerCase())) {
                         return true;
                     }
                     return false;
@@ -94,7 +88,12 @@ function Select({ isMultiple }) {
         setChips(newChip);
         defOptions[key] = [...defOptions[key], delChip];
         const newOptions = { ...options };
-        newOptions[key] = [...newOptions[key], delChip];
+        if (newOptions[key] === undefined) {
+            newOptions[key] = [];
+            newOptions[key] = [...newOptions[key], delChip];
+        } else {
+            newOptions[key] = [...newOptions[key], delChip];
+        }
         setOptions(newOptions);
     }
 
@@ -118,12 +117,17 @@ function Select({ isMultiple }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const chip = options.find(option => option.content.includes(input));
-        addChip(chip);
-        clearInput("");
+
+        const size = Object.keys(options).length;
+        if (size === 1) {
+            const key = Object.keys(options)[0];
+            const option = options[key][0];
+
+            isMultiple ? addChip(key, option) : addInput(key, option);
+            clearInput("");
+        }
+
     }
-
-
 
     const handleClickOutside = (e) => {
         if (ref.current && ref.current.contains(e.target)) {
@@ -131,31 +135,35 @@ function Select({ isMultiple }) {
         }
         else if (ref.current && !ref.current.contains(e.target)) {
             toggleOpen(false);
+            setToggleclass(false);
         }
     }
 
 
     return (
-        <div className="page-container" onClick={handleClickOutside}>
+        <div className="page-container">
             <div className="dropdown-container">
-                <form className="search" ref={ref} onSubmit={handleSubmit} style={{}}>
+                <form className="search" ref={ref} onSubmit={handleSubmit} onClick={() => setToggleclass(true)}>
                     {
                         isMultiple
                             ?
-                            <Chip defOptions={chips} deleteChip={deleteChip} />
+                            <>
+                                <Chip defOptions={chips} deleteChip={deleteChip} />
+                                <input className="search-input" type="text" placeholder={"search"} value={input} onChange={handleInput} />
+                            </>
                             :
-                            <div>
-                                <p>{single[Object.keys(single)[0]].content}</p>
+                            <div className="single">
+                                <p>{(single[Object.keys(single)[0]].content) ? single[Object.keys(single)[0]].content : "select"}</p>
+                                <input className={`single-input ${toggleclass ? "show" : "hide"}`} type="text" placeholder={"search"} value={input} onChange={handleInput} />
                             </div>
                     }
-                    <input type="text" placeholder={"search"} value={input} onChange={handleInput} />
                     <div className="arrow"></div>
                     {open && <div className="dropdown">
-                        <RSC style={{ height: "120px" }}>
+                        <RSC style={{ height: height }}>
                             {
                                 Object.entries(options).map(([key, value], i) =>
-                                    <div className="group" key={key}>
-                                        <p>{key}</p>
+                                    <div className="some" key={key}>
+                                        <div className="group"><p>{key}</p></div>
                                         {value.map(
                                             (option) => <div className="option" onClick={() => isMultiple ? addChip(key, option) : addInput(key, option)} key={option.key}><span>{option.content}</span></div>
                                         )}
@@ -163,9 +171,10 @@ function Select({ isMultiple }) {
                                 )
                             }
                         </RSC>
-                    </div>}
+                    </div>
+                    }
                 </form>
-            </div >
+            </div>
         </div>
     );
 }
