@@ -8,7 +8,7 @@ function useToggle(initialValue = false) {
     const clearState = () => {
         setState("");
     }
-    return [state, handleChange, clearState];
+    return [state, handleChange, clearState, setState];
 }
 
 export default useToggle;
